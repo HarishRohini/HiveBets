@@ -1,0 +1,256 @@
+name: hivebets
+
+x-java-env: &java-env
+  DB_URL: jdbc:postgresql://postgres:5432/hivebets
+  DB_USER: ${POSTGRES_USER:-hivebets}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-hivebets}
+  RABBIT_HOST: rabbitmq
+  RABBIT_USER: ${RABBITMQ_USER:-hivebets}
+  RABBIT_PASSWORD: ${RABBITMQ_PASSWORD:-hivebets}
+  REDIS_HOST: redis
+  MONGO_URI: mongodb://mongo:27017/hivebets
+  IDENTITY_URL: http://identity-service:8101
+  TRADING_URL: http://trading-service:8102
+  NEWS_URL: http://news-service:8103
+  REALTIME_URL: http://realtime-service:8104
+  ANALYTICS_URL: http://analytics-service:8106
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_METRIC_EXPORT_INTERVAL: "10000"
+  OTEL_INSTRUMENTATION_MICROMETER_ENABLED: "true"
+  JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70
+
+x-java-service: &java-service
+  restart: unless-stopped
+  build:
+    context: ./services
+    dockerfile: Dockerfile
+  depends_on: &java-deps
+    postgres: { condition: service_healthy }
+    rabbitmq: { condition: service_healthy }
+    redis: { condition: service_healthy }
+    lgtm: { condition: service_started }
+
+services:
+  # ---------- infrastructure ----------
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: hivebets
+      POSTGRES_USER: ${POSTGRES_USER:-hivebets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hivebets}
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ops/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d hivebets"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:8.0
+    ports: ["27017:27017"]
+    volumes: [mongodata:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-hivebets}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-hivebets}
+    ports: ["5672:5672", "15672:15672", "15692:15692"]
+    volumes: [rabbitdata:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  # S3-compatible object store for the data lake (MinIO no longer publishes images on Docker Hub).
+  rustfs:
+    image: rustfs/rustfs:1.0.7
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-hivebets}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-hivebets-secret}
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+    command: ["/data"]
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [lakedata:/data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9000/health || curl -fs http://127.0.0.1:9000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Grafana + Prometheus + Loki + Tempo + OpenTelemetry collector in one container.
+  lgtm:
+    image: grafana/otel-lgtm:0.41.1
+    ports: ["3001:3000", "4317:4317", "4318:4318", "9090:9090"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./ops/otel/otelcol-config.yaml:/otel-lgtm/otelcol-config.yaml:ro
+      - ./ops/grafana/provisioning/hivebets-dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/hivebets-dashboards.yaml:ro
+      - ./ops/grafana/provisioning/hivebets-alerts.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/hivebets-alerts.yaml:ro
+      - ./ops/grafana/dashboards:/otel-lgtm/hivebets-dashboards:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.21.1
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-hivebets}:${POSTGRES_PASSWORD:-hivebets}@postgres:5432/hivebets?sslmode=disable
+    depends_on: { postgres: { condition: service_healthy } }
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.99.0-alpine
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on: { redis: { condition: service_healthy } }
+
+  # ---------- backend services ----------
+  identity-service:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: identity-service } }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: identity-service
+      SERVER_PORT: "8101"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-admin}
+      ENGINE_USERNAME: ${ENGINE_USERNAME:-world-engine}
+      ENGINE_PASSWORD: ${ENGINE_PASSWORD:-change-me-engine}
+      AGENT_INVITE_CODE: ${AGENT_INVITE_CODE:-change-me-invite}
+    healthcheck: &java-health
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:$${SERVER_PORT}/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  trading-service:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: trading-service } }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: trading-service
+      SERVER_PORT: "8102"
+      SEED_REAL_MARKETS: "true"
+    healthcheck: *java-health
+
+  news-service:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: news-service } }
+    depends_on:
+      <<: *java-deps
+      mongo: { condition: service_healthy }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: news-service
+      SERVER_PORT: "8103"
+      EMBEDDINGS_URL: ${EMBEDDINGS_URL:-http://host.docker.internal:8081}
+      RSS_FEEDS: ${RSS_FEEDS:-}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck: *java-health
+
+  realtime-service:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: realtime-service } }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: realtime-service
+      SERVER_PORT: "8104"
+    healthcheck: *java-health
+
+  lake-sink:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: lake-sink } }
+    depends_on:
+      <<: *java-deps
+      rustfs: { condition: service_healthy }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: lake-sink
+      SERVER_PORT: "8105"
+      S3_ENDPOINT: http://rustfs:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-hivebets}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-hivebets-secret}
+      LAKE_BUCKET: ${LAKE_BUCKET:-hivebets-lake}
+    healthcheck: *java-health
+
+  analytics-service:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: analytics-service } }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: analytics-service
+      SERVER_PORT: "8106"
+    healthcheck: *java-health
+
+  gateway:
+    <<: *java-service
+    build: { context: ./services, args: { MODULE: gateway } }
+    ports: ["8080:8080"]
+    depends_on:
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      identity-service: { condition: service_healthy }
+    environment:
+      <<: *java-env
+      OTEL_SERVICE_NAME: gateway
+      SERVER_PORT: "8080"
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+    healthcheck: *java-health
+
+  # ---------- web app ----------
+  web:
+    restart: unless-stopped
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+    ports: ["3000:3000"]
+    depends_on:
+      gateway: { condition: service_healthy }
+
+  # ---------- data pipeline ----------
+  pipeline:
+    restart: unless-stopped
+    build: { context: ./data }
+    ports: ["3002:3000"]
+    environment:
+      S3_ENDPOINT: rustfs:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-hivebets}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-hivebets-secret}
+      LAKE_BUCKET: ${LAKE_BUCKET:-hivebets-lake}
+      PG_HOST: postgres
+      PG_USER: ${POSTGRES_USER:-hivebets}
+      PG_PASSWORD: ${POSTGRES_PASSWORD:-hivebets}
+      PG_DB: hivebets
+    depends_on:
+      postgres: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  mongodata:
+  rabbitdata:
+  lakedata:

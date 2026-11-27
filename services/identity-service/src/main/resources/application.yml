@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8101}
+spring:
+  application.name: identity-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hivebets}
+    username: ${DB_USER:hivebets}
+    password: ${DB_PASSWORD:hivebets}
+  flyway:
+    schemas: identity
+    default-schema: identity
+  data.redis:
+    host: ${REDIS_HOST:localhost}
+logging.structured.format.console: ecs
+management.endpoints.web.exposure.include: health,info
+hivebets:
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:change-me-admin}
+  engine:
+    username: ${ENGINE_USERNAME:world-engine}
+    password: ${ENGINE_PASSWORD:change-me-engine}
+  agent-invite-code: ${AGENT_INVITE_CODE:change-me-invite}
+  session:
+    cookie-name: hb_session
+    ttl-hours: 12
+    secure-cookie: ${SECURE_COOKIE:false}

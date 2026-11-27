@@ -1,0 +1,81 @@
+# Replaces the default collector config inside grafana/otel-lgtm so it also scrapes
+# the infrastructure exporters and the llama.cpp servers.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+  prometheus/infra:
+    config:
+      scrape_configs:
+        - job_name: opentelemetry-collector
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+        - job_name: postgres
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["postgres-exporter:9187"]
+        - job_name: redis
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["redis-exporter:9121"]
+        - job_name: rabbitmq
+          scrape_interval: 15s
+          metrics_path: /metrics/per-object
+          static_configs:
+            - targets: ["rabbitmq:15692"]
+        - job_name: llama-embeddings
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["host.docker.internal:8081"]
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/ready"
+
+processors:
+  batch:
+
+exporters:
+  otlp_http/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+    tls:
+      insecure: true
+  otlp_http/traces:
+    endpoint: http://127.0.0.1:4418
+    tls:
+      insecure: true
+  otlp_http/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+    tls:
+      insecure: true
+  otlp_grpc/profiles:
+    endpoint: http://127.0.0.1:4040
+    tls:
+      insecure: true
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http/traces]
+    metrics:
+      receivers: [otlp, prometheus/infra]
+      processors: [batch]
+      exporters: [otlp_http/metrics]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http/logs]
+    profiles:
+      receivers: [otlp]
+      exporters: [otlp_grpc/profiles]
