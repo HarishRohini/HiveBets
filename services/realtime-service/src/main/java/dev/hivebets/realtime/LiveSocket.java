@@ -118,7 +118,9 @@ public class LiveSocket extends TextWebSocketHandler {
                         @Override
                         public void afterHandshake(ServerHttpRequest req, ServerHttpResponse res, WebSocketHandler h, Exception e) {}
                     })
-                    .setAllowedOriginPatterns(webOrigin, "http://localhost:*", "http://127.0.0.1:*");
+                    // Browsers only reach this through the gateway, which checks the Origin of WebSocket
+                    // upgrades (spring.cloud.gateway.server.webflux.websocket.allowed-origins).
+                    .setAllowedOriginPatterns("*");
         }
     }
 }

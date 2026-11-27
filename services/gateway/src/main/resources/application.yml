@@ -13,16 +13,9 @@ spring:
     gateway:
       server:
         webflux:
-          globalcors:
-            cors-configurations:
-              '[/**]':
-                allowed-origins: ${WEB_ORIGIN:http://localhost:3000}
-                allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-                allowed-headers: ["*"]
-                allow-credentials: true
-                max-age: 3600
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+          # Browsers send Origin on WebSocket upgrades; the gateway refuses other origins.
+          websocket:
+            allowed-origins: ${WEB_ORIGIN:http://localhost:3000}
           routes:
             - id: login
               uri: ${IDENTITY_URL:http://localhost:8101}

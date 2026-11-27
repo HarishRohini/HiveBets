@@ -126,7 +126,9 @@ export function MarketView({ id }: { id: string }) {
               ? resolvedHolding.payoutCents > 0
                 ? `Your winning shares paid out ${money(resolvedHolding.payoutCents)}.`
                 : "Your shares were on the losing side and paid nothing."
-              : "Winning shares paid $1.00 each. You held none."}
+              : portfolio.isFetching
+                ? "Settling payouts…"
+                : "Winning shares paid $1.00 each. You held none."}
           </span>
         </div>
       )}
