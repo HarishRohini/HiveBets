@@ -10,7 +10,10 @@ import dev.hivebets.trading.domain.OrderRec;
 import dev.hivebets.trading.domain.Types;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import jakarta.annotation.PreDestroy;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -53,7 +56,7 @@ public class TradingService {
     private final Views views;
     private final Exchange exchange;
     private final Map<UUID, Worker> workers = new ConcurrentHashMap<>();
-    private final Timer orderTimer;
+    private final DoubleHistogram orderLatency;
     private final MeterRegistry meters;
 
     private static final class Worker {
@@ -76,8 +79,11 @@ public class TradingService {
         this.views = views;
         this.exchange = new Exchange(clock, UUID::randomUUID);
         this.meters = meters;
-        this.orderTimer = Timer.builder("hivebets.order.latency").description("Order placement: match and commit")
-                .publishPercentileHistogram().register(meters);
+        // OpenTelemetry API directly, so the histogram is exported with explicit buckets.
+        this.orderLatency = GlobalOpenTelemetry.getMeter("trading-service").histogramBuilder("hivebets.order.latency")
+                .setUnit("s").setDescription("Order placement: match and commit")
+                .setExplicitBucketBoundariesAdvice(List.of(0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0))
+                .build();
     }
 
     /** Rebuild every live market's book from its open orders (time priority = seq). */
@@ -162,7 +168,7 @@ public class TradingService {
             if (existing != null) return new Placed(existing, true);
         }
         if (views.market(req.marketId()) == null) throw ApiException.notFound("No such market.");
-        Timer.Sample sample = Timer.start(meters);
+        long started = System.nanoTime();
         String result = "accepted";
         try {
             Exchange.PlaceResult r = inMarket(req.marketId(), (state, book) -> {
@@ -184,7 +190,7 @@ public class TradingService {
             if (existing != null) return new Placed(existing, true);
             throw e;
         } finally {
-            sample.stop(orderTimer);
+            orderLatency.record((System.nanoTime() - started) / 1e9, Attributes.of(AttributeKey.stringKey("result"), result));
             Counter.builder("hivebets.orders").tag("result", result).register(meters).increment();
         }
     }
