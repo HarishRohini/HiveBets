@@ -1,0 +1,26 @@
+server:
+  port: ${SERVER_PORT:8103}
+spring:
+  application.name: news-service
+  mongodb:
+    uri: ${MONGO_URI:mongodb://localhost:27017/hivebets}
+  data.mongodb:
+    uri: ${MONGO_URI:mongodb://localhost:27017/hivebets}
+    auto-index-creation: true
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    username: ${RABBIT_USER:hivebets}
+    password: ${RABBIT_PASSWORD:hivebets}
+    publisher-confirm-type: simple
+logging.structured.format.console: ecs
+management.endpoints.web.exposure.include: health,info
+hivebets:
+  trading-url: ${TRADING_URL:http://localhost:8102}
+  rss:
+    feeds: ${RSS_FEEDS:}
+    poll-ms: ${RSS_POLL_MS:300000}
+  embeddings:
+    url: ${EMBEDDINGS_URL:http://localhost:8081}
+    model: ${EMBEDDINGS_MODEL:embeddinggemma}
+    match-threshold: ${NEWS_MATCH_THRESHOLD:0.50}
+    duplicate-threshold: ${NEWS_DUPLICATE_THRESHOLD:0.92}

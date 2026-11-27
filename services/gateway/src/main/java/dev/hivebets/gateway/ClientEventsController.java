@@ -28,17 +28,26 @@ public class ClientEventsController {
     static final int MAX_BATCH = 100;
     private final EventPublisher publisher;
     private final EventFactory events;
+    private final ObjectMapper mapper;
 
-    public ClientEventsController(EventPublisher publisher, EventFactory events) {
+    public ClientEventsController(EventPublisher publisher, EventFactory events, ObjectMapper mapper) {
         this.publisher = publisher;
         this.events = events;
+        this.mapper = mapper;
     }
 
     public record ClientEvent(String type, String sessionId, String path, Object ts, Map<String, Object> props) {}
     public record Batch(List<ClientEvent> events) {}
 
+    /** Accepts application/json and text/plain (navigator.sendBeacon on page unload sends text/plain). */
     @PostMapping("/api/events")
-    public Mono<ResponseEntity<Void>> ingest(@RequestBody Batch batch, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Void>> ingest(@RequestBody(required = false) String body, ServerWebExchange exchange) {
+        Batch batch;
+        try {
+            batch = body == null || body.length() > 256_000 ? null : mapper.readValue(body, Batch.class);
+        } catch (RuntimeException e) {
+            batch = null;
+        }
         if (batch == null || batch.events() == null) return Mono.just(ResponseEntity.badRequest().build());
         Object p = exchange.getAttribute(AuthFilter.PRINCIPAL_ATTR);
         String userId = p instanceof TokenVerifier.Principal u ? u.id() : null;

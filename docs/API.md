@@ -63,7 +63,7 @@ Every account starts with 100000 cents. Buying reserves `price × shares` cents;
 
 - `GET /api/news?marketId=&limit=50` → `[Headline]`, newest first.
 - `POST /api/news` `{marketId, text, source?, url?, publisher?}` → `201 Headline`. `source` defaults to `manual` for admins and `synthetic` for the engine.
-- `GET /api/admin/news/ingested?limit=100` → raw RSS items with their match result (Phase 2).
+- `GET /api/admin/news/ingested?limit=100` → `[{id, title, url, publisher, feed, similarity, matchedMarketId, status: MATCHED|UNMATCHED|DUPLICATE|NO_EMBEDDINGS, headlineId, ingestedAt}]`, newest first (Phase 2).
 
 ## realtime-service (port 8104)
 
@@ -72,11 +72,11 @@ Every account starts with 100000 cents. Buying reserves `price × shares` cents;
 - `GET /api/live/leaderboard?limit=50` → `{rows: [LeaderRow], me: LeaderRow|null, total}`, where `LeaderRow` = `{rank, userId, username, accountType, profitCents, equityCents, marketsTraded, marketsWon, marketsResolved}`.
 - `GET /api/live/equity` → own `[{t, equityCents}]` (epoch seconds, last hour).
 - `GET /api/live/stats` → `{tradersOnline, connections}`.
-- `WS /ws`: the client sends `{"op": "subscribe", "topics": ["markets", "market:<id>", "leaderboard", "user"]}`. The server sends `{"topic", "type", "data"}`, where `type` is the event type below and `data` is its payload.
+- `WS /ws`: the client sends `{"op": "subscribe" | "unsubscribe", "topics": ["markets", "market:<id>", "leaderboard", "news", "user"]}`. The server sends `{"topic", "type", "data"}`, where `type` is the event type below and `data` is its payload.
 
 ## gateway (port 8080)
 
-- `POST /api/events` `{events: [{type, sessionId, path, ts, props}]}` → `202`. `type` is one of `page_view`, `click`, `order_submitted`, `session_start`, `session_end`, `web_vital`. Each is published as a `client.<type>` event with the user id attached when signed in.
+- `POST /api/events` `{events: [{type, sessionId, path, ts, props}]}` → `202`. Accepts `application/json` or `text/plain` (for `navigator.sendBeacon`). `type` is one of `page_view`, `click`, `order_submitted`, `session_start`, `session_end`, `web_vital`. Each is published as a `client.<type>` event with the user id attached when signed in.
 
 ## analytics-service (port 8106, admin only)
 
