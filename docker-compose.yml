@@ -77,7 +77,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-hivebets}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-hivebets}
     ports: ["5672:5672", "15672:15672", "15692:15692"]
-    volumes: [rabbitdata:/var/lib/rabbitmq]
+    volumes: [rabbitdata:/var/lib/rabbitmq/mnesia]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 10s

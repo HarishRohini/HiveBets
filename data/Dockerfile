@@ -25,6 +25,6 @@ RUN cd dbt && dbt parse --profiles-dir . --quiet
 
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=10 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/server_info', timeout=4)"
+  CMD python -c "import urllib.request as u; u.build_opener(u.ProxyHandler({})).open('http://127.0.0.1:3000/server_info', timeout=4)"
 # Webserver and daemon (the daemon runs the 5-minute schedule).
 CMD ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000", "-m", "pipeline.definitions"]
