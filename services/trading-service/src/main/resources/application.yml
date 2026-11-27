@@ -1,0 +1,21 @@
+server:
+  port: ${SERVER_PORT:8102}
+spring:
+  application.name: trading-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hivebets}
+    username: ${DB_USER:hivebets}
+    password: ${DB_PASSWORD:hivebets}
+    hikari.maximum-pool-size: 30
+  flyway:
+    schemas: trading
+    default-schema: trading
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    username: ${RABBIT_USER:hivebets}
+    password: ${RABBIT_PASSWORD:hivebets}
+    publisher-confirm-type: simple
+logging.structured.format.console: ecs
+management.endpoints.web.exposure.include: health,info
+hivebets:
+  seed-real-markets: ${SEED_REAL_MARKETS:true}

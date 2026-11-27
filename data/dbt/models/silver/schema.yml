@@ -1,0 +1,20 @@
+version: 2
+models:
+  - name: trades
+    columns:
+      - name: trade_id
+        tests: [not_null, unique]
+      - name: market_id
+        tests: [not_null]
+  - name: orders
+    columns:
+      - name: order_id
+        tests: [not_null, unique]
+  - name: markets
+    columns:
+      - name: market_id
+        tests: [not_null, unique]
+  - name: client_events
+    columns:
+      - name: event_id
+        tests: [unique]

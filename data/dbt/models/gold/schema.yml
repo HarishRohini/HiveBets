@@ -1,0 +1,18 @@
+version: 2
+models:
+  - name: market_activity
+    columns:
+      - name: market_id
+        tests: [not_null, unique]
+  - name: session_funnel
+    columns:
+      - name: step_order
+        tests: [not_null, unique]
+  - name: trader_profit
+    columns:
+      - name: user_id
+        tests: [unique]
+  - name: daily_summary
+    columns:
+      - name: day
+        tests: [not_null, unique]

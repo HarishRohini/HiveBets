@@ -1,0 +1,37 @@
+[
+  {
+    "slug": "nasa-2026-warmest-year",
+    "question": "Will NASA report 2026 as the warmest year on record before 31 January 2027?",
+    "yesStatement": "NASA announced that 2026 was the warmest year on record.",
+    "noStatement": "NASA did not rank 2026 as the warmest year on record.",
+    "closeAt": "2027-01-31T23:59:00Z"
+  },
+  {
+    "slug": "boe-cut-feb-2027",
+    "question": "Will the Bank of England cut Bank Rate at its February 2027 decision?",
+    "yesStatement": "The Bank of England lowered interest rates in February 2027.",
+    "noStatement": "The Bank of England held or raised interest rates in February 2027.",
+    "closeAt": "2027-02-04T12:00:00Z"
+  },
+  {
+    "slug": "starship-crew-orbit-mid-2027",
+    "question": "Will a crewed Starship flight reach orbit before 1 July 2027?",
+    "yesStatement": "Astronauts flew to orbit aboard SpaceX Starship.",
+    "noStatement": "Starship has not yet carried a crew to orbit.",
+    "closeAt": "2027-07-01T00:00:00Z"
+  },
+  {
+    "slug": "ev-sales-2026-20m",
+    "question": "Will global electric car sales in 2026 exceed 20 million, according to the IEA?",
+    "yesStatement": "The IEA reported more than 20 million electric cars sold worldwide in 2026.",
+    "noStatement": "The IEA reported fewer than 20 million electric cars sold worldwide in 2026.",
+    "closeAt": "2027-06-30T00:00:00Z"
+  },
+  {
+    "slug": "uk-inflation-below-2-early-2027",
+    "question": "Will UK CPI inflation fall below 2% in any month reported before 1 April 2027?",
+    "yesStatement": "UK consumer price inflation dropped below two percent.",
+    "noStatement": "UK consumer price inflation stayed at or above two percent.",
+    "closeAt": "2027-04-01T00:00:00Z"
+  }
+]

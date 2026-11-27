@@ -17,3 +17,6 @@ data/.dagster/
 swarm/state/
 .idea/
 .vscode/
+.jqwik-database
+*.tsbuildinfo
+next-env.d.ts

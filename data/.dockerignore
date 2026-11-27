@@ -1,0 +1,6 @@
+dbt/target
+dbt/logs
+dbt/dbt_packages
+.dagster
+**/__pycache__
+.venv
