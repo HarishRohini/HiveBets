@@ -1,0 +1,28 @@
+server:
+  port: ${SERVER_PORT:8105}
+spring:
+  application:
+    name: lake-sink
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    username: ${RABBIT_USER:hivebets}
+    password: ${RABBIT_PASSWORD:hivebets}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+logging:
+  structured:
+    format:
+      console: ecs
+hivebets:
+  lake:
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+    access-key: ${S3_ACCESS_KEY:hivebets}
+    secret-key: ${S3_SECRET_KEY:hivebets-secret}
+    bucket: ${LAKE_BUCKET:hivebets-lake}
+    region: us-east-1
+    flush-rows: 5000
+    flush-interval-ms: ${LAKE_FLUSH_INTERVAL_MS:30000}
+    max-buffered-rows: 8000

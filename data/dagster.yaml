@@ -1,0 +1,3 @@
+# Dagster instance config: keep run history in DAGSTER_HOME (a container volume is enough here).
+telemetry:
+  enabled: false
