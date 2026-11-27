@@ -666,6 +666,15 @@
      "expr": "sum by (queue) (rabbitmq_queue_messages)",
      "legendFormat": "{{queue}}",
      "refId": "A"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     },
+     "expr": "max(hivebets_outbox_pending)",
+     "legendFormat": "trading outbox pending",
+     "refId": "B"
     }
    ],
    "id": 16

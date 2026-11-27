@@ -22,9 +22,14 @@ make up                 # builds every image and starts the stack
 
 ```bash
 make smoke    # two test accounts trade against each other through the gateway
-make test     # service unit tests (incl. the money-conservation property test) and web tests
+make test     # unit and contract tests: services (JUnit), web (Vitest), lake models (pytest)
+make e2e      # Playwright end-to-end suite against the running stack
+make load     # k6 load test with the SLOs as thresholds (RATE=40 DURATION=2m)
+make drill-rabbitmq   # failure drills; see docs/RUNBOOK.md
 make down     # stop (keeps data); `make nuke` also deletes all data
 ```
+
+Alerts, SLOs, drills and what to do when something breaks: [docs/RUNBOOK.md](docs/RUNBOOK.md). Event payloads are pinned by JSON Schemas in `services/common/src/main/resources/events/schemas`; producers and consumers are both tested against them. CI runs in GitHub Actions (`.github/workflows/ci.yml`).
 
 Check the trading ledger at any time:
 

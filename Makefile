@@ -1,6 +1,8 @@
 EMBED_MODEL ?= ggml-org/embeddinggemma-300M-GGUF
+RATE ?= 40
+DURATION ?= 2m
 
-.PHONY: embeddings web-test e2e data-test replay-dlq help up down nuke infra build test smoke ps logs pipeline-once
+.PHONY: embeddings load drill-rabbitmq drill-trading consistency web-test e2e data-test replay-dlq help up down nuke infra build test smoke ps logs pipeline-once
 
 INFRA = postgres mongo redis rabbitmq rustfs lgtm postgres-exporter redis-exporter
 
@@ -13,6 +15,8 @@ help:
 	@echo "make smoke       two test accounts trade against each other through the gateway"
 	@echo "make e2e         Playwright end-to-end suite against the running stack"
 	@echo "make replay-dlq  move dead-lettered events back to their queues"
+	@echo "make load        k6 load test (RATE=40 DURATION=2m); see docs/RUNBOOK.md"
+	@echo "make drill-rabbitmq | drill-trading | consistency   failure drills and checks"
 	@echo "make embeddings  run the llama.cpp embedding server on the host (port 8081, Phase 2)"
 	@echo "make ps | logs   status / follow logs"
 
@@ -49,6 +53,19 @@ e2e:
 
 replay-dlq:
 	python3 scripts/replay_dlq.py
+
+load:
+	docker run --rm --network host -v "$(CURDIR)/load:/load" -e RATE=$(RATE) -e DURATION=$(DURATION) \
+	  -e ADMIN_USERNAME -e ADMIN_PASSWORD grafana/k6:1.4.2 run /load/trading.js
+
+drill-rabbitmq:
+	scripts/drills/rabbitmq_outage.sh
+
+drill-trading:
+	scripts/drills/trading_restart.sh
+
+consistency:
+	scripts/drills/check_consistency.sh
 
 smoke: .env
 	python3 scripts/smoke.py
