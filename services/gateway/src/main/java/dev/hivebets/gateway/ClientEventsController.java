@@ -55,13 +55,7 @@ public class ClientEventsController {
         List<EventPublisher.Outgoing> out = new ArrayList<>();
         for (ClientEvent e : batch.events().stream().limit(MAX_BATCH).toList()) {
             if (e == null || !TYPES.contains(e.type())) continue;
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("sessionId", e.sessionId());
-            payload.put("userId", userId);
-            payload.put("path", e.path());
-            payload.put("ts", e.ts());
-            payload.put("props", e.props() == null ? Map.of() : e.props());
-            payload.put("userAgent", ua);
+            Map<String, Object> payload = payload(e, userId, ua);
             String type = EventTypes.CLIENT_PREFIX + e.type();
             out.add(new EventPublisher.Outgoing(type, events.toJson(events.envelope(type, e.sessionId(), payload)),
                     EventFactory.currentTraceparent()));
@@ -69,6 +63,18 @@ public class ClientEventsController {
         return Mono.fromRunnable(() -> publisher.publishAll(out))
                 .subscribeOn(Schedulers.boundedElastic())
                 .thenReturn(ResponseEntity.status(HttpStatus.ACCEPTED).<Void>build());
+    }
+
+    /** The client.* event payload (schema: events/schemas/client.schema.json). */
+    static Map<String, Object> payload(ClientEvent e, String userId, String userAgent) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("sessionId", e.sessionId());
+        payload.put("userId", userId);
+        payload.put("path", e.path());
+        payload.put("ts", e.ts());
+        payload.put("props", e.props() == null ? Map.of() : e.props());
+        payload.put("userAgent", userAgent);
+        return payload;
     }
 
     @Configuration

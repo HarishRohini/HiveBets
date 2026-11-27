@@ -35,10 +35,18 @@ public class LiveState {
         return "mkt:" + id + ":" + part;
     }
 
-    /** True the first time an event id is seen (consumer idempotency). */
-    public boolean firstSeen(String eventId) {
+    /**
+     * Consumer idempotency: claims an event id, true only the first time. Delivery is at-least-once
+     * (outbox relay, broker redelivery), so duplicates are expected and skipped here.
+     */
+    public boolean claim(String eventId) {
         Boolean ok = redis.opsForValue().setIfAbsent("evt:" + eventId, "1", Duration.ofHours(2));
         return Boolean.TRUE.equals(ok);
+    }
+
+    /** Gives a claim back when handling failed, so the retry is not mistaken for a duplicate. */
+    public void release(String eventId) {
+        redis.delete("evt:" + eventId);
     }
 
     public void marketCreated(String id) {

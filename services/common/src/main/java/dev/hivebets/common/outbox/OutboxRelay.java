@@ -1,5 +1,6 @@
 package dev.hivebets.common.outbox;
 
+import dev.hivebets.common.events.Backoff;
 import dev.hivebets.common.events.EventPublisher;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +20,7 @@ public class OutboxRelay {
     private final TransactionTemplate tx;
     private final EventPublisher publisher;
     private final String table;
+    private final Backoff backoff = new Backoff(200, 10_000);
 
     public OutboxRelay(JdbcTemplate jdbc, TransactionTemplate tx, EventPublisher publisher, String schema) {
         this.jdbc = jdbc;
@@ -31,14 +33,27 @@ public class OutboxRelay {
 
     @Scheduled(fixedDelayString = "${hivebets.outbox.poll-ms:100}")
     public void relay() {
+        if (!backoff.ready()) return;
         try {
             int n;
             do {
                 n = relayBatch();
             } while (n == 500);
+            if (backoff.failures() > 0) log.info("outbox relay recovered after {} failed attempts", backoff.failures());
+            backoff.succeeded();
         } catch (Exception e) {
-            log.warn("outbox relay failed, will retry: {}", e.toString());
+            long wait = backoff.failed();
+            // Rows stay in the outbox (the transaction rolled back), so nothing is lost while the broker is away.
+            if (backoff.failures() <= 3 || backoff.failures() % 20 == 0) {
+                log.warn("outbox relay failed ({} in a row), next try in {} ms: {}", backoff.failures(), wait, e.toString());
+            }
         }
+    }
+
+    /** Rows waiting to be published; exported as a gauge by services that use the outbox. */
+    public long pending() {
+        Long n = jdbc.queryForObject("select count(*) from " + table + " where published_at is null", Long.class);
+        return n == null ? 0 : n;
     }
 
     int relayBatch() {

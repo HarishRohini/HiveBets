@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/client.schema.json",
+  "title": "client",
+  "description": "Clickstream and web-vitals events from the web app (types client.page_view, client.click, client.order_submitted, client.session_start, client.session_end, client.web_vital).",
+  "type": "object",
+  "required": [
+    "sessionId",
+    "path",
+    "props"
+  ],
+  "properties": {
+    "sessionId": {
+      "type": "string"
+    },
+    "userId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "path": {
+      "type": "string"
+    },
+    "ts": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "props": {
+      "type": "object"
+    },
+    "userAgent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "sessionId": "s-1a2b3c",
+      "userId": "0b1f8a35-7c84-4b0e-a2b6-5e6a3d6d9f01",
+      "path": "/markets/5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "ts": "2026-11-27T10:00:00Z",
+      "props": {
+        "metric": "LCP",
+        "value": 1234.5
+      },
+      "userAgent": "Mozilla/5.0"
+    }
+  ]
+}

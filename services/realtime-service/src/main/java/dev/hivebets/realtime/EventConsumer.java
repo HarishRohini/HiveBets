@@ -4,6 +4,7 @@ import dev.hivebets.common.events.EventEnvelope;
 import dev.hivebets.common.events.EventFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -25,8 +26,26 @@ public class EventConsumer {
 
     @RabbitListener(queues = RealtimeApplication.QUEUE, concurrency = "1")
     public void onEvent(Message message) {
-        EventEnvelope e = events.fromJson(message.getBody());
-        if (!state.firstSeen(e.eventId())) return;
+        EventEnvelope e;
+        try {
+            e = events.fromJson(message.getBody());
+        } catch (RuntimeException bad) {
+            // Retrying cannot fix a malformed message: straight to the dead-letter queue.
+            throw new AmqpRejectAndDontRequeueException("unreadable event: " + bad.getMessage(), bad);
+        }
+        if (e.eventId() == null || e.type() == null || e.payload() == null) {
+            throw new AmqpRejectAndDontRequeueException("event without id, type or payload");
+        }
+        if (!state.claim(e.eventId())) return;
+        try {
+            handle(e);
+        } catch (RuntimeException ex) {
+            state.release(e.eventId());
+            throw ex;  // retried with backoff, then dead-lettered (see application.yml)
+        }
+    }
+
+    void handle(EventEnvelope e) {
         JsonNode p = e.payload();
         switch (e.type()) {
             case "trade.executed" -> {

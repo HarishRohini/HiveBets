@@ -11,5 +11,6 @@ dependencies {
     implementation("io.micrometer:micrometer-core")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(testFixtures(project(":common")))
     testImplementation("net.jqwik:jqwik:1.9.3")
 }

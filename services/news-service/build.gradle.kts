@@ -8,4 +8,5 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-restclient")
     implementation("com.rometools:rome:2.1.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(testFixtures(project(":common")))
 }

@@ -1,4 +1,7 @@
-plugins { `java-library` }
+plugins {
+    `java-library`
+    `java-test-fixtures`
+}
 
 dependencies {
     api("org.springframework.boot:spring-boot-autoconfigure")
@@ -13,6 +16,10 @@ dependencies {
     compileOnly("org.springframework:spring-webmvc")
     compileOnly("jakarta.servlet:jakarta.servlet-api")
 
+    testFixturesApi("com.networknt:json-schema-validator:3.0.9")
+    testFixturesApi("tools.jackson.core:jackson-databind")
+    testFixturesApi("org.junit.jupiter:junit-jupiter-api")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.springframework.boot:spring-boot-starter-rabbitmq")
 }
