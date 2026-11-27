@@ -33,10 +33,12 @@ public class LiveSocket extends TextWebSocketHandler {
     private final ObjectMapper mapper;
     private final java.util.Set<WebSocketSession> open = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    public LiveSocket(Fanout fanout, LiveState state, ObjectMapper mapper) {
+    public LiveSocket(Fanout fanout, LiveState state, ObjectMapper mapper, io.micrometer.core.instrument.MeterRegistry meters) {
         this.fanout = fanout;
         this.state = state;
         this.mapper = mapper;
+        io.micrometer.core.instrument.Gauge.builder("hivebets.ws.connections", open, java.util.Set::size)
+                .description("Open browser WebSocket connections on this instance").register(meters);
     }
 
     @Override
