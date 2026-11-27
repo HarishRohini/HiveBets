@@ -1,2 +1,218 @@
+# Grafana alert rules, provisioned at start-up. Each links to its entry in docs/RUNBOOK.md.
 apiVersion: 1
-groups: []
+groups:
+- orgId: 1
+  name: hivebets
+  folder: HiveBets
+  interval: 1m
+  rules:
+  - uid: order-errors
+    title: Order API error rate above 1%
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    annotations:
+      summary: More than 1% of order requests failed with a server error over 5 minutes.
+      runbook_url: https://github.com/HarishRohini/HiveBets/blob/main/docs/RUNBOOK.md#order-errors
+    labels:
+      severity: critical
+      team: hivebets
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (sum(rate(spring_cloud_gateway_requests_seconds_count{routeId="trading",httpMethod="POST",outcome="SERVER_ERROR"}[5m])) or vector(0)) / sum(rate(spring_cloud_gateway_requests_seconds_count{routeId="trading",httpMethod="POST"}[5m]))
+        instant: true
+        intervalMs: 15000
+        maxDataPoints: 43200
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.01
+  - uid: order-latency
+    title: Order latency p95 above 300 ms
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    annotations:
+      summary: Matching and committing an order takes longer than 300 ms for 5% of orders.
+      runbook_url: https://github.com/HarishRohini/HiveBets/blob/main/docs/RUNBOOK.md#order-latency
+    labels:
+      severity: warning
+      team: hivebets
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: histogram_quantile(0.95, sum by (le) (rate(hivebets_order_latency_seconds_bucket[5m])))
+        instant: true
+        intervalMs: 15000
+        maxDataPoints: 43200
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.3
+  - uid: dead-letters
+    title: Events in a dead-letter queue
+    condition: C
+    for: 1m
+    noDataState: OK
+    execErrState: Error
+    annotations:
+      summary: A consumer gave up on some events after retries. Fix the cause, then run make replay-dlq.
+      runbook_url: https://github.com/HarishRohini/HiveBets/blob/main/docs/RUNBOOK.md#dead-letters
+    labels:
+      severity: critical
+      team: hivebets
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: sum(rabbitmq_queue_messages{queue=~".*\\.dlq"})
+        instant: true
+        intervalMs: 15000
+        maxDataPoints: 43200
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+  - uid: outbox-backlog
+    title: Outbox not draining
+    condition: C
+    for: 2m
+    noDataState: OK
+    execErrState: Error
+    annotations:
+      summary: trading-service cannot publish events (RabbitMQ down or unreachable); orders still work, live updates lag.
+      runbook_url: https://github.com/HarishRohini/HiveBets/blob/main/docs/RUNBOOK.md#outbox-backlog
+    labels:
+      severity: critical
+      team: hivebets
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: max(hivebets_outbox_pending)
+        instant: true
+        intervalMs: 15000
+        maxDataPoints: 43200
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 1000
+  - uid: queue-backlog
+    title: Consumer falling behind
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    annotations:
+      summary: A consumer queue has more than 5,000 messages waiting; live views or the lake are lagging.
+      runbook_url: https://github.com/HarishRohini/HiveBets/blob/main/docs/RUNBOOK.md#queue-backlog
+    labels:
+      severity: warning
+      team: hivebets
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: max by (queue) (rabbitmq_queue_messages_ready{queue!~".*\\.dlq"})
+        instant: true
+        intervalMs: 15000
+        maxDataPoints: 43200
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 5000
+  - uid: analytics-stale
+    title: Analytics data is stale
+    condition: C
+    for: 10m
+    noDataState: OK
+    execErrState: Error
+    annotations:
+      summary: The lake pipeline has not refreshed the analytics tables for 20 minutes; check Dagster on port 3002.
+      runbook_url: https://github.com/HarishRohini/HiveBets/blob/main/docs/RUNBOOK.md#analytics-stale
+    labels:
+      severity: warning
+      team: hivebets
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: max(hivebets_analytics_data_age_seconds)
+        instant: true
+        intervalMs: 15000
+        maxDataPoints: 43200
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 1200
