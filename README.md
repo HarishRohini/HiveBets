@@ -58,8 +58,10 @@ news-service polls the RSS feeds in `RSS_FEEDS`, embeds each headline with Embed
 
 ```bash
 brew install llama.cpp
-llama-server -hf ggml-org/embeddinggemma-300M-GGUF --embeddings --port 8081 --host 0.0.0.0 --metrics
+make embeddings     # llama-server -hf ggml-org/embeddinggemma-300M-GGUF --embeddings --host 0.0.0.0 --port 8081 --metrics
 ```
+
+Server flags change between llama.cpp releases; if `make embeddings` fails, check `llama-server --help`. On the Admin screen, "Real news ingested" shows each headline's similarity score and what happened to it; tune `NEWS_MATCH_THRESHOLD` in `.env` from those scores. An admin can also trigger a poll at once with `POST /api/admin/news/poll`.
 
 The curated real-world markets are in `services/trading-service/src/main/resources/seed/real-markets.json`; an admin resolves them by hand on the Admin screen.
 

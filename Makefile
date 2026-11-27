@@ -1,4 +1,6 @@
-.PHONY: help up down nuke infra build test smoke ps logs pipeline-once
+EMBED_MODEL ?= ggml-org/embeddinggemma-300M-GGUF
+
+.PHONY: embeddings help up down nuke infra build test smoke ps logs pipeline-once
 
 INFRA = postgres mongo redis rabbitmq rustfs lgtm postgres-exporter redis-exporter
 
@@ -9,6 +11,7 @@ help:
 	@echo "make nuke        stop everything and delete all data volumes"
 	@echo "make test        run service and web unit tests"
 	@echo "make smoke       two test accounts trade against each other through the gateway"
+	@echo "make embeddings  run the llama.cpp embedding server on the host (port 8081, Phase 2)"
 	@echo "make ps | logs   status / follow logs"
 
 .env:
@@ -45,3 +48,8 @@ ps:
 
 logs:
 	docker compose logs -f --tail=100
+
+# Phase 2: EmbeddingGemma on the Mac's GPU (brew install llama.cpp). news-service reaches it
+# through host.docker.internal:8081; Grafana scrapes its /metrics.
+embeddings:
+	llama-server -hf $(EMBED_MODEL) --embeddings --host 0.0.0.0 --port 8081 --metrics

@@ -64,6 +64,7 @@ Every account starts with 100000 cents. Buying reserves `price × shares` cents;
 - `GET /api/news?marketId=&limit=50` → `[Headline]`, newest first.
 - `POST /api/news` `{marketId, text, source?, url?, publisher?}` → `201 Headline`. `source` defaults to `manual` for admins and `synthetic` for the engine.
 - `GET /api/admin/news/ingested?limit=100` → `[{id, title, url, publisher, feed, similarity, matchedMarketId, status: MATCHED|UNMATCHED|DUPLICATE|NO_EMBEDDINGS, headlineId, ingestedAt}]`, newest first (Phase 2).
+- `POST /api/admin/news/poll` → `{fetched, added, outcomes}`: runs one RSS poll now (admin).
 
 ## realtime-service (port 8104)
 

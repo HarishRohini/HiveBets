@@ -13,9 +13,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class NewsController {
     private final NewsService news;
+    private final RssIngester rss;
 
-    public NewsController(NewsService news) {
+    public NewsController(NewsService news, RssIngester rss) {
         this.news = news;
+        this.rss = rss;
+    }
+
+    @GetMapping("/api/admin/news/ingested")
+    public List<Ingested.View> ingested(CurrentUser user, @RequestParam(defaultValue = "100") int limit) {
+        user.require("ADMIN");
+        return rss.recent(limit);
+    }
+
+    /** Runs one RSS poll now instead of waiting for the schedule. */
+    @PostMapping("/api/admin/news/poll")
+    public RssIngester.PollResult poll(CurrentUser user) {
+        user.require("ADMIN");
+        return rss.poll();
     }
 
     public record PostHeadline(String marketId, String text, String source, String url, String publisher) {}

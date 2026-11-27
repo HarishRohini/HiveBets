@@ -170,6 +170,8 @@ services:
       SERVER_PORT: "8103"
       EMBEDDINGS_URL: ${EMBEDDINGS_URL:-http://host.docker.internal:8081}
       RSS_FEEDS: ${RSS_FEEDS:-}
+      NEWS_MATCH_THRESHOLD: ${NEWS_MATCH_THRESHOLD:-0.50}
+      NEWS_DUPLICATE_THRESHOLD: ${NEWS_DUPLICATE_THRESHOLD:-0.92}
     extra_hosts: ["host.docker.internal:host-gateway"]
     healthcheck: *java-health
 
