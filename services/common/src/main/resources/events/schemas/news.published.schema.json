@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/news.published.schema.json",
+  "title": "news.published",
+  "description": "A headline shown to traders.",
+  "type": "object",
+  "required": [
+    "id",
+    "text",
+    "source",
+    "publishedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "marketId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+    },
+    "source": {
+      "enum": [
+        "synthetic",
+        "real",
+        "manual"
+      ]
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "publisher": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "id": "272c4b03-0688-4dae-859d-b13d209df6db",
+      "marketId": "5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "text": "Ice miners' union withdraws its objection to the water-rights bill",
+      "source": "synthetic",
+      "url": null,
+      "publisher": null,
+      "publishedAt": "2026-11-27T10:04:00Z"
+    }
+  ]
+}

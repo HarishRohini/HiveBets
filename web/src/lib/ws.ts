@@ -47,7 +47,9 @@ class LiveSocket {
       } catch {
         return;
       }
-      this.handlers.get(m.topic)?.forEach((h) => h(m));
+      // The server sends the caller's own topic as "user:<id>"; clients subscribe to it as "user".
+      const key = m.topic?.startsWith("user:") ? "user" : m.topic;
+      this.handlers.get(key)?.forEach((h) => h(m));
     };
     ws.onclose = () => {
       this.setConnected(false);

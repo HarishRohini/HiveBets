@@ -25,6 +25,7 @@ public class NewsService {
     private final MongoTemplate mongo;
     private final EventPublisher publisher;
     private final EventFactory events;
+    private final dev.hivebets.common.events.Backoff backoff = new dev.hivebets.common.events.Backoff(200, 10_000);
 
     public NewsService(MongoTemplate mongo, EventPublisher publisher, EventFactory events) {
         this.mongo = mongo;
@@ -59,6 +60,7 @@ public class NewsService {
     /** Publishes unpublished headlines (the outbox), oldest first. Also runs right after each insert. */
     @Scheduled(fixedDelay = 500)
     public synchronized void relay() {
+        if (!backoff.ready()) return;
         try {
             List<Headline> pending = mongo.find(new Query(Criteria.where("published").is(false))
                     .with(Sort.by("publishedAt")).limit(100), Headline.class);
@@ -67,8 +69,12 @@ public class NewsService {
                     events.toJson(events.envelope(EventTypes.NEWS_PUBLISHED, h.marketId(), h.view())), h.traceparent())).toList());
             mongo.updateMulti(new Query(Criteria.where("_id").in(pending.stream().map(Headline::id).toList())),
                     new Update().set("published", true), Headline.class);
+            backoff.succeeded();
         } catch (RuntimeException e) {
-            log.warn("news relay failed, will retry: {}", e.toString());
+            long wait = backoff.failed();
+            if (backoff.failures() <= 3 || backoff.failures() % 20 == 0) {
+                log.warn("news relay failed ({} in a row), next try in {} ms: {}", backoff.failures(), wait, e.toString());
+            }
         }
     }
 

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/market.closed.schema.json",
+  "title": "market.closed",
+  "description": "Trading stopped at the close time.",
+  "type": "object",
+  "required": [
+    "marketId",
+    "closedAt"
+  ],
+  "properties": {
+    "marketId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "closedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "marketId": "5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "closedAt": "2026-11-27T10:10:00Z"
+    }
+  ]
+}

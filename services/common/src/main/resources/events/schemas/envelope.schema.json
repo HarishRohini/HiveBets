@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/envelope.schema.json",
+  "title": "envelope",
+  "description": "Wrapper every event on hivebets.events carries.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "occurredAt",
+    "source",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string"
+    },
+    "key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "traceId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "e3b0c442-98fc-4c14-9afb-f4c8996fb924",
+      "type": "trade.executed",
+      "version": 1,
+      "occurredAt": "2026-11-27T10:00:00Z",
+      "source": "trading-service",
+      "key": "5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "payload": {}
+    }
+  ]
+}

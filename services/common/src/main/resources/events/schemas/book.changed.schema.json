@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/book.changed.schema.json",
+  "title": "book.changed",
+  "description": "Top 10 levels of each side of the YES book.",
+  "type": "object",
+  "required": [
+    "marketId",
+    "bids",
+    "asks"
+  ],
+  "properties": {
+    "marketId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "bids": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "price",
+          "shares"
+        ],
+        "properties": {
+          "price": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "shares": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "asks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "price",
+          "shares"
+        ],
+        "properties": {
+          "price": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          },
+          "shares": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "marketId": "5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "bids": [
+        {
+          "price": 59,
+          "shares": 30
+        }
+      ],
+      "asks": [
+        {
+          "price": 61,
+          "shares": 20
+        }
+      ]
+    }
+  ]
+}

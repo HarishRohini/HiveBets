@@ -15,6 +15,7 @@ class MemoryState implements ExchangeState {
     final Map<String, Long> ledger = new HashMap<>();
     final List<TradeRec> trades = new ArrayList<>();
     final List<String> events = new ArrayList<>();
+    final List<Object[]> emitted = new ArrayList<>();  // {type, payload}
 
     @Override public Wallet wallet(UUID userId, String username, String accountType) {
         return wallets.computeIfAbsent(userId, id -> {
@@ -54,7 +55,7 @@ class MemoryState implements ExchangeState {
         }
     }
 
-    @Override public void emit(String type, String key, Object payload) { events.add(type); }
+    @Override public void emit(String type, String key, Object payload) { events.add(type); emitted.add(new Object[] {type, payload}); }
 
     long ledger(String account, UUID id) { return ledger.getOrDefault(account + ":" + id, 0L); }
 }

@@ -113,22 +113,28 @@ public class Views {
                        and exists (select 1 from trading.market_traders t where t.user_id = p.user_id and t.market_id = p.market_id)) as resolved,
                   (select count(*) from trading.positions p join trading.markets m on m.id = p.market_id
                      where p.user_id = w.user_id and m.status = 'RESOLVED' and coalesce(p.payout_cents, 0) > 0) as won
-                from trading.wallets w where w.user_id = ?""", (rs, i) -> {
-            long equity = rs.getLong("available_cents") + rs.getLong("reserved_cents") + rs.getLong("held");
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("userId", rs.getObject("user_id", UUID.class));
-            m.put("username", rs.getString("username"));
-            m.put("accountType", rs.getString("account_type"));
-            m.put("availableCents", rs.getLong("available_cents"));
-            m.put("reservedCents", rs.getLong("reserved_cents"));
-            m.put("equityCents", equity);
-            m.put("profitCents", equity - dev.hivebets.trading.domain.Exchange.STARTING_CENTS);
-            m.put("startingCents", dev.hivebets.trading.domain.Exchange.STARTING_CENTS);
-            m.put("marketsTraded", rs.getLong("traded"));
-            m.put("marketsWon", rs.getLong("won"));
-            m.put("marketsResolved", rs.getLong("resolved"));
-            return m;
-        }, userId).stream().findFirst().orElse(null);
+                from trading.wallets w where w.user_id = ?""", (rs, i) -> walletPayload(rs.getObject("user_id", UUID.class),
+                rs.getString("username"), rs.getString("account_type"), rs.getLong("available_cents"), rs.getLong("reserved_cents"),
+                rs.getLong("held"), rs.getLong("traded"), rs.getLong("won"), rs.getLong("resolved")), userId).stream().findFirst().orElse(null);
+    }
+
+    /** The wallet.changed payload (also the portfolio's wallet block). heldCents = open positions at last price. */
+    static Map<String, Object> walletPayload(UUID userId, String username, String accountType, long available, long reserved,
+                                             long heldCents, long traded, long won, long resolved) {
+        long equity = available + reserved + heldCents;
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("userId", userId);
+        m.put("username", username);
+        m.put("accountType", accountType);
+        m.put("availableCents", available);
+        m.put("reservedCents", reserved);
+        m.put("equityCents", equity);
+        m.put("profitCents", equity - dev.hivebets.trading.domain.Exchange.STARTING_CENTS);
+        m.put("startingCents", dev.hivebets.trading.domain.Exchange.STARTING_CENTS);
+        m.put("marketsTraded", traded);
+        m.put("marketsWon", won);
+        m.put("marketsResolved", resolved);
+        return m;
     }
 
     public List<Map<String, Object>> openPositions(UUID userId) {

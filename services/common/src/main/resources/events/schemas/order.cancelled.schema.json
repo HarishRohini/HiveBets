@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/order.cancelled.schema.json",
+  "title": "order.cancelled",
+  "description": "An order left the book unfilled (by the user, self-trade prevention or resolution).",
+  "type": "object",
+  "required": [
+    "orderId",
+    "marketId",
+    "userId",
+    "remainingShares",
+    "reason"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "marketId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "remainingShares": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reason": {
+      "enum": [
+        "USER",
+        "SELF_TRADE",
+        "MARKET_RESOLVED"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "orderId": "3f2e1d0c-9b8a-4765-a4b3-c2d1e0f9a8b7",
+      "marketId": "5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "userId": "0b1f8a35-7c84-4b0e-a2b6-5e6a3d6d9f01",
+      "remainingShares": 6,
+      "reason": "USER"
+    }
+  ]
+}

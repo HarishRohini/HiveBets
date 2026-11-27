@@ -11,10 +11,14 @@ spring:
     listener.simple:
       prefetch: 200
       default-requeue-rejected: false
+      # Failed handling is retried in place with exponential backoff, then rejected without
+      # requeue, which sends it to realtime.events.dlq (scripts/replay_dlq.py moves it back).
       retry:
         enabled: true
-        max-attempts: 3
+        max-attempts: 4
         initial-interval: 500ms
+        multiplier: 2
+        max-interval: 5s
 logging.structured.format.console: ecs
 management.endpoints.web.exposure.include: health,info
 hivebets:

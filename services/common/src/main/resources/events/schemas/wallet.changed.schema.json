@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/wallet.changed.schema.json",
+  "title": "wallet.changed",
+  "description": "A trader's cash or holdings changed; drives the leaderboard.",
+  "type": "object",
+  "required": [
+    "userId",
+    "username",
+    "accountType",
+    "availableCents",
+    "reservedCents",
+    "equityCents",
+    "profitCents",
+    "marketsTraded",
+    "marketsWon",
+    "marketsResolved"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "username": {
+      "type": "string"
+    },
+    "accountType": {
+      "enum": [
+        "HUMAN",
+        "AGENT",
+        "SERVICE"
+      ]
+    },
+    "availableCents": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reservedCents": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "equityCents": {
+      "type": "integer"
+    },
+    "profitCents": {
+      "type": "integer"
+    },
+    "startingCents": {
+      "type": "integer"
+    },
+    "marketsTraded": {
+      "type": "integer"
+    },
+    "marketsWon": {
+      "type": "integer"
+    },
+    "marketsResolved": {
+      "type": "integer"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b1f8a35-7c84-4b0e-a2b6-5e6a3d6d9f01",
+      "username": "quiet-quant-0502",
+      "accountType": "AGENT",
+      "availableCents": 98000,
+      "reservedCents": 600,
+      "equityCents": 100400,
+      "profitCents": 400,
+      "startingCents": 100000,
+      "marketsTraded": 3,
+      "marketsWon": 1,
+      "marketsResolved": 2
+    }
+  ]
+}

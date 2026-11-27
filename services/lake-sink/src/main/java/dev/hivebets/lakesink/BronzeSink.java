@@ -85,6 +85,7 @@ public class BronzeSink {
             List<BronzeRow> rows = buffer.computeIfAbsent(p, k -> new ArrayList<>());
             rows.add(row);
             buffered++;
+            if (retryPending) return;  // the object store is failing; the scheduled flush retries
             if (rows.size() >= props.flushRows()) {
                 flushPartition(p);
             } else if (buffered >= props.maxBufferedRows()) {
@@ -93,8 +94,12 @@ public class BronzeSink {
         }
     }
 
+    private int failures;
+    private boolean retryPending;
+
     @Scheduled(fixedDelayString = "${hivebets.lake.flush-interval-ms:30000}")
     public synchronized void flushAll() {
+        retryPending = false;
         for (PartitionPath.Partition p : new ArrayList<>(buffer.keySet())) {
             flushPartition(p);
         }
@@ -116,10 +121,19 @@ public class BronzeSink {
             String key = p.objectKey(UUID.randomUUID());
             store.put(key, file);
             ack(rows, true);
+            failures = 0;
             log.info("landed {} {} events at {}", rows.size(), p.eventType(), key);
         } catch (Exception ex) {
-            log.warn("flush of {} failed, requeueing {} events: {}", p.prefix(), rows.size(), ex.toString());
-            ack(rows, false);
+            // Keep the batch (still unacked) and try again at the next scheduled flush, instead of
+            // requeueing and spinning while the object store is down. The broker's prefetch limit
+            // stops new deliveries once the buffer is full, so memory stays bounded.
+            failures++;
+            log.warn("flush of {} failed ({} in a row), keeping {} events for the next attempt: {}",
+                    p.prefix(), failures, rows.size(), ex.toString());
+            buffer.computeIfAbsent(p, k -> new ArrayList<>()).addAll(0, rows);
+            buffered += rows.size();
+            retryPending = true;
+            return;
         } finally {
             if (file != null) {
                 try { Files.deleteIfExists(file); } catch (Exception ignored) { }

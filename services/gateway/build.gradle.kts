@@ -7,4 +7,5 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-rabbitmq")
     implementation("com.nimbusds:nimbus-jose-jwt:10.10")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(testFixtures(project(":common")))
 }

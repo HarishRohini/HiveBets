@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hivebets.dev/events/market.created.schema.json",
+  "title": "market.created",
+  "description": "A market opened (payload is the Market from docs/API.md).",
+  "type": "object",
+  "required": [
+    "id",
+    "question",
+    "yesStatement",
+    "noStatement",
+    "kind",
+    "status",
+    "closeAt",
+    "createdAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "question": {
+      "type": "string"
+    },
+    "yesStatement": {
+      "type": "string"
+    },
+    "noStatement": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "SIMULATED",
+        "REAL"
+      ]
+    },
+    "status": {
+      "enum": [
+        "OPEN",
+        "CLOSED",
+        "RESOLVED"
+      ]
+    },
+    "closeAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolvedAt": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lastPrice": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "volumeCents": {
+      "type": "integer"
+    },
+    "tradeCount": {
+      "type": "integer"
+    },
+    "traderCount": {
+      "type": "integer"
+    }
+  },
+  "examples": [
+    {
+      "id": "5d7e6c1a-6b9f-4d3e-9a51-1f0f6c0c2b11",
+      "question": "Will the Mars colony council pass the water-rights vote?",
+      "yesStatement": "The vote passed.",
+      "noStatement": "The vote failed.",
+      "kind": "SIMULATED",
+      "status": "OPEN",
+      "closeAt": "2026-11-27T10:10:00Z",
+      "createdAt": "2026-11-27T10:00:00Z",
+      "resolvedAt": null,
+      "outcome": null,
+      "lastPrice": null,
+      "volumeCents": 0,
+      "tradeCount": 0,
+      "traderCount": 0
+    }
+  ]
+}

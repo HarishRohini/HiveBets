@@ -11,4 +11,5 @@ dependencies {
     implementation("software.amazon.awssdk:url-connection-client")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(testFixtures(project(":common")))
 }

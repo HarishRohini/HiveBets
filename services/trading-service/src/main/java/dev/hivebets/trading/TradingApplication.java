@@ -31,6 +31,12 @@ public class TradingApplication {
     @Bean EventFactory eventFactory(ObjectMapper mapper) { return new EventFactory(mapper, "trading-service"); }
     @Bean EventPublisher eventPublisher(RabbitTemplate rabbit, EventFactory f) { return new EventPublisher(rabbit, f); }
     @Bean OutboxWriter outboxWriter(JdbcTemplate jdbc, EventFactory f) { return new OutboxWriter(jdbc, f, SCHEMA); }
-    @Bean OutboxRelay outboxRelay(JdbcTemplate jdbc, TransactionTemplate tx, EventPublisher p) { return new OutboxRelay(jdbc, tx, p, SCHEMA); }
+    @Bean OutboxRelay outboxRelay(JdbcTemplate jdbc, TransactionTemplate tx, EventPublisher p,
+                                  io.micrometer.core.instrument.MeterRegistry meters) {
+        OutboxRelay relay = new OutboxRelay(jdbc, tx, p, SCHEMA);
+        io.micrometer.core.instrument.Gauge.builder("hivebets.outbox.pending", relay, OutboxRelay::pending)
+                .description("Outbox rows not yet published to RabbitMQ").register(meters);
+        return relay;
+    }
     @Bean TopicExchange eventsExchange() { return dev.hivebets.common.events.AmqpTopology.eventsExchange(); }
 }

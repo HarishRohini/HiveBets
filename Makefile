@@ -1,6 +1,6 @@
 EMBED_MODEL ?= ggml-org/embeddinggemma-300M-GGUF
 
-.PHONY: embeddings help up down nuke infra build test smoke ps logs pipeline-once
+.PHONY: embeddings web-test e2e data-test replay-dlq help up down nuke infra build test smoke ps logs pipeline-once
 
 INFRA = postgres mongo redis rabbitmq rustfs lgtm postgres-exporter redis-exporter
 
@@ -11,6 +11,8 @@ help:
 	@echo "make nuke        stop everything and delete all data volumes"
 	@echo "make test        run service and web unit tests"
 	@echo "make smoke       two test accounts trade against each other through the gateway"
+	@echo "make e2e         Playwright end-to-end suite against the running stack"
+	@echo "make replay-dlq  move dead-lettered events back to their queues"
 	@echo "make embeddings  run the llama.cpp embedding server on the host (port 8081, Phase 2)"
 	@echo "make ps | logs   status / follow logs"
 
@@ -33,9 +35,20 @@ build:
 	cd services && ./gradlew build -x test
 	cd web && pnpm install --frozen-lockfile && pnpm build
 
-test:
+test: data-test web-test
 	cd services && ./gradlew test
-	cd web && pnpm install --frozen-lockfile && pnpm test
+
+web-test:
+	cd web && pnpm install --frozen-lockfile && pnpm lint && pnpm test
+
+data-test:
+	python3 -m pytest -q data/tests
+
+e2e:
+	cd e2e && pnpm install --frozen-lockfile && pnpm exec playwright install chromium && pnpm test
+
+replay-dlq:
+	python3 scripts/replay_dlq.py
 
 smoke: .env
 	python3 scripts/smoke.py
