@@ -4,7 +4,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-autoconfigure")
     api("tools.jackson.core:jackson-databind")
     api("io.opentelemetry:opentelemetry-api")
-    compileOnly("org.springframework.boot:spring-boot-starter-amqp")
+    compileOnly("org.springframework.boot:spring-boot-starter-rabbitmq")
     compileOnly("org.springframework.boot:spring-boot-starter-jdbc")
     compileOnly("org.springframework.boot:spring-boot-starter-webmvc")
     compileOnly("org.springframework.boot:spring-boot-starter-validation")
@@ -14,5 +14,5 @@ dependencies {
     compileOnly("jakarta.servlet:jakarta.servlet-api")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-amqp")
+    testImplementation("org.springframework.boot:spring-boot-starter-rabbitmq")
 }

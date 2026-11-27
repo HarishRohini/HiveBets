@@ -1,0 +1,73 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  application.name: gateway
+  data.redis:
+    host: ${REDIS_HOST:localhost}
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    username: ${RABBIT_USER:hivebets}
+    password: ${RABBIT_PASSWORD:hivebets}
+    publisher-confirm-type: simple
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${WEB_ORIGIN:http://localhost:3000}
+                allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+                allowed-headers: ["*"]
+                allow-credentials: true
+                max-age: 3600
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+          routes:
+            - id: login
+              uri: ${IDENTITY_URL:http://localhost:8101}
+              predicates: ["Path=/api/auth/login"]
+              filters:
+                - name: CacheRequestBody
+                  args:
+                    bodyClass: java.lang.String
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@loginUsernameKeyResolver}"
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+            - id: identity
+              uri: ${IDENTITY_URL:http://localhost:8101}
+              predicates: ["Path=/api/auth/**"]
+              filters: &user-limit
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userKeyResolver}"
+                    redis-rate-limiter.replenishRate: 50
+                    redis-rate-limiter.burstCapacity: 100
+                    redis-rate-limiter.requestedTokens: 1
+            - id: trading
+              uri: ${TRADING_URL:http://localhost:8102}
+              predicates: ["Path=/api/markets/**,/api/markets,/api/orders/**,/api/orders,/api/portfolio/**,/api/portfolio"]
+              filters: *user-limit
+            - id: news
+              uri: ${NEWS_URL:http://localhost:8103}
+              predicates: ["Path=/api/news/**,/api/news,/api/admin/news/**"]
+              filters: *user-limit
+            - id: realtime
+              uri: ${REALTIME_URL:http://localhost:8104}
+              predicates: ["Path=/api/live/**"]
+              filters: *user-limit
+            - id: realtime-ws
+              uri: ${REALTIME_WS_URL:ws://localhost:8104}
+              predicates: ["Path=/ws"]
+            - id: analytics
+              uri: ${ANALYTICS_URL:http://localhost:8106}
+              predicates: ["Path=/api/analytics/**"]
+              filters: *user-limit
+logging.structured.format.console: ecs
+management.endpoints.web.exposure.include: health,info
+hivebets:
+  jwks-url: ${IDENTITY_URL:http://localhost:8101}/.well-known/jwks.json
+  cookie-name: hb_session
