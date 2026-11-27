@@ -1,0 +1,21 @@
+server:
+  port: ${SERVER_PORT:8104}
+spring:
+  application.name: realtime-service
+  data.redis:
+    host: ${REDIS_HOST:localhost}
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    username: ${RABBIT_USER:hivebets}
+    password: ${RABBIT_PASSWORD:hivebets}
+    listener.simple:
+      prefetch: 200
+      default-requeue-rejected: false
+      retry:
+        enabled: true
+        max-attempts: 3
+        initial-interval: 500ms
+logging.structured.format.console: ecs
+management.endpoints.web.exposure.include: health,info
+hivebets:
+  web-origin: ${WEB_ORIGIN:http://localhost:3000}

@@ -33,7 +33,7 @@ public class WebSupport {
                 resolvers.add(new HandlerMethodArgumentResolver() {
                     @Override
                     public boolean supportsParameter(MethodParameter p) {
-                        return p.getParameterType() == CurrentUser.class;
+                        return p.nestedIfOptional().getNestedParameterType() == CurrentUser.class;
                     }
 
                     @Override
@@ -42,6 +42,7 @@ public class WebSupport {
                         HttpServletRequest r = req.getNativeRequest(HttpServletRequest.class);
                         CurrentUser u = CurrentUser.fromHeaders(r.getHeader(CurrentUser.H_ID), r.getHeader(CurrentUser.H_NAME),
                                 r.getHeader(CurrentUser.H_ROLES), r.getHeader(CurrentUser.H_TYPE));
+                        if (p.getParameterType() == java.util.Optional.class) return java.util.Optional.ofNullable(u);
                         if (u == null && !p.isOptional()) throw ApiException.unauthenticated();
                         return u;
                     }
