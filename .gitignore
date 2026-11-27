@@ -20,3 +20,5 @@ swarm/state/
 .jqwik-database
 *.tsbuildinfo
 next-env.d.ts
+ccr-ca.crt
+Dockerfile.ccr

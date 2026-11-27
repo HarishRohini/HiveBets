@@ -13,6 +13,8 @@ x-java-env: &java-env
   TRADING_URL: http://trading-service:8102
   NEWS_URL: http://news-service:8103
   REALTIME_URL: http://realtime-service:8104
+  REALTIME_WS_URL: ws://realtime-service:8104
+  WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
   ANALYTICS_URL: http://analytics-service:8106
   OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
